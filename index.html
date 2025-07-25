@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>裝扮角色</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>角色換裝系統</h1>
+
+  <div id="controls">
+    <button onclick="addAccessory('服裝', 'https://i.imgur.com/T1y1I8I.png')">加服裝</button>
+    <button onclick="addAccessory('邊框', 'https://i.imgur.com/xUPY9U6.png', true)">加邊框</button>
+    <button onclick="addText()">加文字</button>
+    <button id="downloadBtn" onclick="downloadImage()">下載圖片</button>
+    <button id="clearBtn" onclick="clearAccessories()">清除全部</button>
+  </div>
+
+  <div id="canvasArea">
+    <img id="baseCharacter" src="https://i.imgur.com/2yAfLKU.png" alt="角色" />
+  </div>
+
+  <!-- JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
