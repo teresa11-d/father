@@ -1,84 +1,72 @@
-const canvasArea = document.getElementById("canvasArea");
-
-function addAccessory(name, src, isFrame = false) {
-  const img = document.createElement("img");
+function addAccessory(src) {
+  const img = document.createElement('img');
   img.src = src;
-  img.className = "draggable";
-  img.style.left = "100px";
-  img.style.top = "100px";
-  img.style.zIndex = isFrame ? "0" : "2";
-  img.style.width = "100px";
-  img.dataset.scale = 1;
-  makeDraggable(img);
-  canvasArea.appendChild(img);
+  img.classList.add('accessory');
+  img.style.left = '100px';
+  img.style.top = '100px';
+
+  makeDraggableAndZoomable(img);
+  document.getElementById('canvas-container').appendChild(img);
 }
 
-function addText() {
-  const text = prompt("請輸入文字：");
-  if (text) {
-    const span = document.createElement("span");
-    span.textContent = text;
-    span.className = "draggable";
-    span.style.position = "absolute";
-    span.style.left = "80px";
-    span.style.top = "80px";
-    span.style.zIndex = "3";
-    span.style.color = "#000";
-    span.style.background = "rgba(255,255,255,0.6)";
-    span.style.padding = "5px";
-    span.style.borderRadius = "5px";
-    span.style.fontSize = "16px";
-    span.dataset.scale = 1;
-    makeDraggable(span);
-    canvasArea.appendChild(span);
-  }
+function clearAccessories() {
+  document.querySelectorAll('.accessory').forEach(el => el.remove());
 }
 
-function makeDraggable(el) {
-  let offsetX, offsetY;
+function downloadImage() {
+  const container = document.getElementById('canvas-container');
+  html2canvas(container).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'my-design.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
 
-  // 拖曳
-  el.onmousedown = function (e) {
-    e.preventDefault();
-    offsetX = e.offsetX;
-    offsetY = e.offsetY;
-    document.onmousemove = function (e) {
-      el.style.left = `${e.pageX - canvasArea.offsetLeft - offsetX}px`;
-      el.style.top = `${e.pageY - canvasArea.offsetTop - offsetY}px`;
-    };
-    document.onmouseup = function () {
-      document.onmousemove = null;
-      document.onmouseup = null;
-    };
-  };
+function makeDraggableAndZoomable(el) {
+  let startX = 0, startY = 0, initialX = 0, initialY = 0;
+  let scale = 1, startDist = 0;
 
-  // 滾輪縮放
-  el.addEventListener("wheel", function (e) {
+  el.addEventListener('touchstart', e => {
     e.preventDefault();
-    let scale = parseFloat(el.dataset.scale || 1);
-    scale += e.deltaY < 0 ? 0.1 : -0.1;
-    scale = Math.max(0.2, Math.min(3, scale)); // 限制縮放倍數
-    el.dataset.scale = scale;
-    if (el.tagName === "IMG") {
-      el.style.width = `${100 * scale}px`;
-    } else if (el.tagName === "SPAN") {
-      el.style.transform = `scale(${scale})`;
+    if (e.touches.length === 1) {
+      // 單指拖移
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      const rect = el.getBoundingClientRect();
+      initialX = rect.left;
+      initialY = rect.top;
+    } else if (e.touches.length === 2) {
+      // 雙指縮放
+      startDist = getDistance(e.touches[0], e.touches[1]);
+    }
+  });
+
+  el.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      el.style.left = `${initialX + dx}px`;
+      el.style.top = `${initialY + dy}px`;
+    } else if (e.touches.length === 2) {
+      const newDist = getDistance(e.touches[0], e.touches[1]);
+      const scaleFactor = newDist / startDist;
+      el.style.transform = `scale(${scale * scaleFactor})`;
+    }
+  });
+
+  el.addEventListener('touchend', e => {
+    if (e.touches.length < 2) {
+      // 記住當前縮放值
+      const match = el.style.transform.match(/scale\(([^)]+)\)/);
+      if (match) scale = parseFloat(match[1]);
     }
   });
 }
 
-function clearAccessories() {
-  const elements = canvasArea.querySelectorAll(".draggable");
-  elements.forEach((el) => {
-    if (el.id !== "baseCharacter") el.remove();
-  });
-}
-
-function downloadImage() {
-  html2canvas(canvasArea).then((canvas) => {
-    const link = document.createElement("a");
-    link.download = "character.png";
-    link.href = canvas.toDataURL();
-    link.click();
-  });
+function getDistance(t1, t2) {
+  const dx = t2.clientX - t1.clientX;
+  const dy = t2.clientY - t1.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
 }
