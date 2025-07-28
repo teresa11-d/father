@@ -1,28 +1,181 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>裝扮角色</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>角色換裝頁面</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    #container {
+      position: relative;
+      width: 300px;
+      height: 400px;
+      border: 2px solid #ccc;
+      background-color: #fff;
+      margin-bottom: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .item {
+      position: absolute;
+      cursor: move;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    #buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: #1976d2;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #145ea8;
+    }
+
+    canvas {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <h1>角色換裝系統</h1>
+  <h2>角色換裝頁面</h2>
 
-  <div id="controls">
-    <button onclick="addAccessory('服裝', 'https://i.imgur.com/T1y1I8I.png')">加服裝</button>
-    <button onclick="addAccessory('邊框', 'https://i.imgur.com/xUPY9U6.png', true)">加邊框</button>
-    <button onclick="addText()">加文字</button>
-    <button id="downloadBtn" onclick="downloadImage()">下載圖片</button>
-    <button id="clearBtn" onclick="clearAccessories()">清除全部</button>
+  <div id="container">
+    <!-- 初始角色 -->
+    <img src="img/base.png" class="item" style="left: 0; top: 0; z-index: 1;" />
   </div>
 
-  <div id="canvasArea">
-    <img id="baseCharacter" src="https://i.imgur.com/2yAfLKU.png" alt="角色" />
+  <div id="buttons">
+    <!-- 衣服配件 -->
+    <button onclick="addImage('img/clothes1.png', 2)">衣服1</button>
+    <button onclick="addImage('img/clothes2.png', 2)">衣服2</button>
+
+    <!-- 框架配件（z-index: 0） -->
+    <button onclick="addImage('img/frame1.png', 0)">邊框1</button>
+    <button onclick="addImage('img/frame2.png', 0)">邊框2</button>
+
+    <!-- 文字裝飾 -->
+    <button onclick="addText('太棒了！')">裝飾字1</button>
+    <button onclick="addText('快來一起玩')">裝飾字2</button>
+
+    <!-- 功能按鈕 -->
+    <button onclick="downloadImage()">下載圖片</button>
+    <button onclick="clearAccessories()">清除配件</button>
   </div>
 
-  <!-- JavaScript -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="script.js"></script>
+  <canvas id="canvas" width="300" height="400"></canvas>
+
+  <script>
+    const container = document.getElementById('container');
+
+    function addImage(src, zIndex = 2) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.className = 'item';
+      img.style.left = '50px';
+      img.style.top = '50px';
+      img.style.zIndex = zIndex;
+      makeDraggable(img);
+      container.appendChild(img);
+    }
+
+    function addText(text) {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.style.left = '30px';
+      div.style.top = '300px';
+      div.style.fontSize = '20px';
+      div.style.color = 'red';
+      div.style.zIndex = 3;
+      div.textContent = text;
+      makeDraggable(div);
+      container.appendChild(div);
+    }
+
+    function makeDraggable(el) {
+      let offsetX = 0, offsetY = 0, isDragging = false;
+
+      el.onmousedown = function(e) {
+        isDragging = true;
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        document.onmousemove = function(e) {
+          if (isDragging) {
+            el.style.left = (e.clientX - offsetX) + 'px';
+            el.style.top = (e.clientY - offsetY) + 'px';
+          }
+        };
+        document.onmouseup = function() {
+          isDragging = false;
+        };
+      };
+    }
+
+    function downloadImage() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const elements = Array.from(container.querySelectorAll('.item'))
+        .sort((a, b) => parseInt(a.style.zIndex || 1) - parseInt(b.style.zIndex || 1));
+
+      const drawAll = async () => {
+        for (const el of elements) {
+          const x = parseInt(el.style.left);
+          const y = parseInt(el.style.top);
+          if (el.tagName === 'IMG') {
+            await new Promise((res) => {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.src = el.src;
+              img.onload = () => {
+                ctx.drawImage(img, x, y, img.width, img.height);
+                res();
+              };
+            });
+          } else if (el.tagName === 'DIV') {
+            ctx.font = '20px Arial';
+            ctx.fillStyle = el.style.color || 'black';
+            ctx.fillText(el.textContent, x, y + 20);
+          }
+        }
+
+        const link = document.createElement('a');
+        link.download = 'character.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      };
+
+      drawAll();
+    }
+
+    function clearAccessories() {
+      const items = container.querySelectorAll('.item');
+      items.forEach((el, idx) => {
+        if (idx !== 0) el.remove(); // 保留初始角色圖
+      });
+    }
+  </script>
 </body>
 </html>
