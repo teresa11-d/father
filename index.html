@@ -16,8 +16,8 @@
 
     #container {
       position: relative;
-      width: 300px;
-      height: 400px;
+      width: 270px;
+      height: 480px;
       border: 2px solid #ccc;
       background-color: #fff;
       margin-bottom: 15px;
@@ -84,7 +84,7 @@
     <button onclick="clearAccessories()">清除配件</button>
   </div>
 
-  <canvas id="canvas" width="300" height="400"></canvas>
+  <canvas id="canvas" width="1080" height="640"></canvas>
 
   <script>
     const container = document.getElementById('container');
@@ -93,8 +93,16 @@
       const img = document.createElement('img');
       img.src = src;
       img.className = 'item';
-      img.style.left = '50px';
-      img.style.top = '50px';
+      img.onload = () => {
+        // 自動縮小圖片到容器大小內
+        const maxWidth = container.clientWidth * 0.8;
+        const maxHeight = container.clientHeight * 0.8;
+        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        img.width = img.width * ratio;
+        img.height = img.height * ratio;
+        img.style.left = ((container.clientWidth - img.width) / 2) + 'px';
+        img.style.top = ((container.clientHeight - img.height) / 2) + 'px';
+      };
       img.style.zIndex = zIndex;
       makeDraggable(img);
       container.appendChild(img);
